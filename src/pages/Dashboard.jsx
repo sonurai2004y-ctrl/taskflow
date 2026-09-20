@@ -1,9 +1,6 @@
 import StatsCard from "../components/StatsCard";
 
-function Dashboard({ tasks }) {
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const pendingTasks = tasks.length - completedTasks;
-
+function Dashboard({ stats }) {
   return (
     <main className="container">
       <section className="welcome">
@@ -12,9 +9,20 @@ function Dashboard({ tasks }) {
       </section>
 
       <section className="stats">
-        <StatsCard title="Total Tasks" value={tasks.length} />
-        <StatsCard title="Completed" value={completedTasks} />
-        <StatsCard title="Pending" value={pendingTasks} />
+        <StatsCard
+          title="Total Tasks"
+          value={stats.total}
+        />
+
+        <StatsCard
+          title="Completed"
+          value={stats.completed}
+        />
+
+        <StatsCard
+          title="Pending"
+          value={stats.pending}
+        />
       </section>
     </main>
   );

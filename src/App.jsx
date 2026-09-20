@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { Routes, Route } from "react-router-dom";
 
 import "./App.css";
@@ -33,10 +39,25 @@ function App() {
   const [newTask, setNewTask] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("taskflow-tasks", JSON.stringify(tasks));
+    localStorage.setItem(
+      "taskflow-tasks",
+      JSON.stringify(tasks)
+    );
   }, [tasks]);
 
-  function addTask() {
+  const taskStats = useMemo(() => {
+    const completed = tasks.filter(
+      (task) => task.completed
+    ).length;
+
+    return {
+      total: tasks.length,
+      completed,
+      pending: tasks.length - completed,
+    };
+  }, [tasks]);
+
+  const addTask = useCallback(() => {
     if (!newTask.trim()) {
       return;
     }
@@ -48,25 +69,34 @@ function App() {
       completed: false,
     };
 
-    setTasks((currentTasks) => [...currentTasks, task]);
-    setNewTask("");
-  }
+    setTasks((currentTasks) => [
+      ...currentTasks,
+      task,
+    ]);
 
-  function completeTask(id) {
+    setNewTask("");
+  }, [newTask]);
+
+  const completeTask = useCallback((id) => {
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
         task.id === id
-          ? { ...task, completed: !task.completed }
+          ? {
+              ...task,
+              completed: !task.completed,
+            }
           : task
       )
     );
-  }
+  }, []);
 
-  function deleteTask(id) {
+  const deleteTask = useCallback((id) => {
     setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== id)
+      currentTasks.filter(
+        (task) => task.id !== id
+      )
     );
-  }
+  }, []);
 
   return (
     <>
@@ -75,7 +105,11 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<Dashboard tasks={tasks} />}
+          element={
+            <Dashboard
+              stats={taskStats}
+            />
+          }
         />
 
         <Route

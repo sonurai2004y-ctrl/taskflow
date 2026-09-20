@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import TaskCard from "../components/TaskCard";
 
 function Tasks({
@@ -8,6 +9,12 @@ function Tasks({
   completeTask,
   deleteTask,
 }) {
+  const inputRef = useRef(null);
+
+  function focusInput() {
+    inputRef.current.focus();
+  }
+
   return (
     <main className="container">
       <section className="welcome">
@@ -17,13 +24,25 @@ function Tasks({
 
       <section className="task-input">
         <input
+          ref={inputRef}
           type="text"
           placeholder="Enter a new task..."
           value={newTask}
-          onChange={(event) => setNewTask(event.target.value)}
+          onChange={(event) =>
+            setNewTask(event.target.value)
+          }
         />
 
-        <button onClick={addTask}>Create Task</button>
+        <button onClick={addTask}>
+          Create Task
+        </button>
+
+        <button
+          className="secondary-button"
+          onClick={focusInput}
+        >
+          Focus Input
+        </button>
       </section>
 
       <section className="tasks">
