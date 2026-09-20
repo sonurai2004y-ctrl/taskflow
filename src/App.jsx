@@ -38,12 +38,39 @@ function App() {
 
   const [newTask, setNewTask] = useState("");
 
+  const [serverStatus, setServerStatus] = useState("Checking...");
+
+  // Save tasks to localStorage
   useEffect(() => {
     localStorage.setItem(
       "taskflow-tasks",
       JSON.stringify(tasks)
     );
   }, [tasks]);
+
+  // Connect React to the Node.js API
+  useEffect(() => {
+    async function checkServer() {
+      try {
+        const response = await fetch(
+          "http://localhost:3000/api/health"
+        );
+
+        if (!response.ok) {
+          throw new Error("Server request failed");
+        }
+
+        const data = await response.json();
+
+        setServerStatus(data.message);
+      } catch (error) {
+        setServerStatus("Backend server unavailable");
+        console.error(error);
+      }
+    }
+
+    checkServer();
+  }, []);
 
   const taskStats = useMemo(() => {
     const completed = tasks.filter(
@@ -101,6 +128,10 @@ function App() {
   return (
     <>
       <Header />
+
+      <div className="server-status">
+        Backend: {serverStatus}
+      </div>
 
       <Routes>
         <Route
