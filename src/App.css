@@ -41,3 +41,25 @@
   border-radius: 6px;
   cursor: pointer;
 }
+
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header nav {
+  display: flex;
+  gap: 20px;
+}
+
+.header nav a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.header nav a.active {
+  font-weight: bold;
+  text-decoration: underline;
+}

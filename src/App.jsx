@@ -1,29 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+
 import "./App.css";
+
 import Header from "./components/Header";
-import StatsCard from "./components/StatsCard";
-import TaskCard from "./components/TaskCard";
+import Dashboard from "./pages/Dashboard";
+import Tasks from "./pages/Tasks";
+import About from "./pages/About";
 
 function App() {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      title: "Learn React Components",
-      description: "Understand reusable components and props.",
-      completed: false,
-    },
-    {
-      id: 2,
-      title: "Create TaskFlow UI",
-      description: "Build the task management interface.",
-      completed: true,
-    },
-  ]);
+  const [tasks, setTasks] = useState(() => {
+    const savedTasks = localStorage.getItem("taskflow-tasks");
+
+    return savedTasks
+      ? JSON.parse(savedTasks)
+      : [
+          {
+            id: 1,
+            title: "Learn React Components",
+            description: "Understand reusable components and props.",
+            completed: false,
+          },
+          {
+            id: 2,
+            title: "Create TaskFlow UI",
+            description: "Build the task management interface.",
+            completed: true,
+          },
+        ];
+  });
 
   const [newTask, setNewTask] = useState("");
 
+  useEffect(() => {
+    localStorage.setItem("taskflow-tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
   function addTask() {
-    if (newTask.trim() === "") {
+    if (!newTask.trim()) {
       return;
     }
 
@@ -42,7 +56,7 @@ function App() {
     setTasks((currentTasks) =>
       currentTasks.map((task) =>
         task.id === id
-          ? { ...task, completed: true }
+          ? { ...task, completed: !task.completed }
           : task
       )
     );
@@ -54,59 +68,36 @@ function App() {
     );
   }
 
-  const completedTasks = tasks.filter(
-    (task) => task.completed
-  ).length;
-
-  const pendingTasks = tasks.length - completedTasks;
-
   return (
-    <div className="app">
+    <>
       <Header />
 
-      <main className="main">
-        <section className="stats">
-          <StatsCard
-            title="Total Tasks"
-            value={tasks.length}
-          />
+      <Routes>
+        <Route
+          path="/"
+          element={<Dashboard tasks={tasks} />}
+        />
 
-          <StatsCard
-            title="Completed"
-            value={completedTasks}
-          />
-
-          <StatsCard
-            title="Pending"
-            value={pendingTasks}
-          />
-        </section>
-
-        <section className="task-input">
-          <input
-            type="text"
-            value={newTask}
-            onChange={(event) => setNewTask(event.target.value)}
-            placeholder="Enter a new task"
-          />
-
-          <button onClick={addTask}>
-            Create Task
-          </button>
-        </section>
-
-        <section className="tasks">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onComplete={completeTask}
-              onDelete={deleteTask}
+        <Route
+          path="/tasks"
+          element={
+            <Tasks
+              tasks={tasks}
+              newTask={newTask}
+              setNewTask={setNewTask}
+              addTask={addTask}
+              completeTask={completeTask}
+              deleteTask={deleteTask}
             />
-          ))}
-        </section>
-      </main>
-    </div>
+          }
+        />
+
+        <Route
+          path="/about"
+          element={<About />}
+        />
+      </Routes>
+    </>
   );
 }
 
