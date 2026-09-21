@@ -1,23 +1,29 @@
 function TaskCard({ task, onComplete, onDelete }) {
   return (
-    <div className="task-card">
-      <h3>{task.title}</h3>
+    <div className={`task-card ${task.completed ? "completed" : ""}`}>
+      <div className="task-content">
+        <h3>{task.title}</h3>
 
-      <p>{task.description}</p>
+        <p>{task.description}</p>
 
-      <span>
-        {task.completed ? "Completed" : "Pending"}
-      </span>
+        <span className="task-status">
+          {task.completed ? "Completed" : "Pending"}
+        </span>
+      </div>
 
-      {!task.completed && (
-        <button onClick={() => onComplete(task.id)}>
-          Complete
+      <div className="task-actions">
+        <button
+          onClick={() => onComplete(task._id)}
+        >
+          {task.completed ? "Undo" : "Complete"}
         </button>
-      )}
 
-      <button onClick={() => onDelete(task.id)}>
-        Delete
-      </button>
+        <button
+          onClick={() => onDelete(task._id)}
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 }

@@ -7,75 +7,23 @@ import {
 
 import { Routes, Route } from "react-router-dom";
 
-import "./App.css";
-
 import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
 import About from "./pages/About";
 
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// const API_URL = "http://localhost:3000/api";
+
 function App() {
-  const [tasks, setTasks] = useState(() => {
-    const savedTasks = localStorage.getItem("taskflow-tasks");
-
-    return savedTasks
-      ? JSON.parse(savedTasks)
-      : [
-          {
-            id: 1,
-            title: "Learn React Components",
-            description: "Understand reusable components and props.",
-            completed: false,
-          },
-          {
-            id: 2,
-            title: "Create TaskFlow UI",
-            description: "Build the task management interface.",
-            completed: true,
-          },
-        ];
-  });
-
+  const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
-
-  const [serverStatus, setServerStatus] = useState("Checking...");
-
-  // Save tasks to localStorage
-  useEffect(() => {
-    localStorage.setItem(
-      "taskflow-tasks",
-      JSON.stringify(tasks)
-    );
-  }, [tasks]);
-
-  // Connect React to the Node.js API
-  useEffect(() => {
-    async function checkServer() {
-      try {
-        const response = await fetch(
-          "http://localhost:3000/api/health"
-        );
-
-        if (!response.ok) {
-          throw new Error("Server request failed");
-        }
-
-        const data = await response.json();
-
-        setServerStatus(data.message);
-      } catch (error) {
-        setServerStatus("Backend server unavailable");
-        console.error(error);
-      }
-    }
-
-    checkServer();
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [serverError, setServerError] = useState("");
 
   const taskStats = useMemo(() => {
-    const completed = tasks.filter(
-      (task) => task.completed
-    ).length;
+    const completed = tasks.filter((task) => task.completed).length;
 
     return {
       total: tasks.length,
@@ -84,54 +32,141 @@ function App() {
     };
   }, [tasks]);
 
-  const addTask = useCallback(() => {
-    if (!newTask.trim()) {
+  useEffect(() => {
+    async function loadTasks() {
+      try {
+        setLoading(true);
+        setServerError("");
+
+        const response = await fetch(`${API_URL}/tasks`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch tasks");
+        }
+
+        const data = await response.json();
+        setTasks(data);
+      } catch (error) {
+        console.error(error);
+        setServerError(
+          "Unable to connect to the TaskFlow backend."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTasks();
+  }, []);
+
+  const addTask = useCallback(async () => {
+    const title = newTask.trim();
+
+    if (!title) {
       return;
     }
 
-    const task = {
-      id: Date.now(),
-      title: newTask,
-      description: "New TaskFlow task",
-      completed: false,
-    };
+    try {
+      const response = await fetch(`${API_URL}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description: "New TaskFlow task",
+        }),
+      });
 
-    setTasks((currentTasks) => [
-      ...currentTasks,
-      task,
-    ]);
+      if (!response.ok) {
+        throw new Error("Failed to create task");
+      }
 
-    setNewTask("");
+      const createdTask = await response.json();
+
+      setTasks((currentTasks) => [
+        createdTask,
+        ...currentTasks,
+      ]);
+
+      setNewTask("");
+    } catch (error) {
+      console.error(error);
+      setServerError("Failed to create task.");
+    }
   }, [newTask]);
 
-  const completeTask = useCallback((id) => {
-    setTasks((currentTasks) =>
-      currentTasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              completed: !task.completed,
-            }
-          : task
-      )
+  const completeTask = useCallback(async (id) => {
+    const task = tasks.find(
+      (currentTask) => currentTask._id === id
     );
-  }, []);
 
-  const deleteTask = useCallback((id) => {
-    setTasks((currentTasks) =>
-      currentTasks.filter(
-        (task) => task.id !== id
-      )
-    );
+    if (!task) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/tasks/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: task.title,
+          description: task.description,
+          completed: !task.completed,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update task");
+      }
+
+      const updatedTask = await response.json();
+
+      setTasks((currentTasks) =>
+        currentTasks.map((currentTask) =>
+          currentTask._id === id
+            ? updatedTask
+            : currentTask
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      setServerError("Failed to update task.");
+    }
+  }, [tasks]);
+
+  const deleteTask = useCallback(async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/tasks/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete task");
+      }
+
+      setTasks((currentTasks) =>
+        currentTasks.filter(
+          (task) => task._id !== id
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      setServerError("Failed to delete task.");
+    }
   }, []);
 
   return (
     <>
       <Header />
 
-      <div className="server-status">
-        Backend: {serverStatus}
-      </div>
+      {serverError && (
+        <div className="server-status error">
+          {serverError}
+        </div>
+      )}
 
       <Routes>
         <Route
@@ -139,6 +174,7 @@ function App() {
           element={
             <Dashboard
               stats={taskStats}
+              loading={loading}
             />
           }
         />
@@ -150,9 +186,10 @@ function App() {
               tasks={tasks}
               newTask={newTask}
               setNewTask={setNewTask}
-              addTask={addTask}
-              completeTask={completeTask}
-              deleteTask={deleteTask}
+              onAddTask={addTask}
+              onComplete={completeTask}
+              onDelete={deleteTask}
+              loading={loading}
             />
           }
         />
