@@ -1,36 +1,44 @@
-import http from "node:http";
+import express from "express";
+import taskRoutes from "./server/routes/taskRoutes.js";
 
+const app = express();
 const PORT = 3000;
 
-const server = http.createServer((req, res) => {
-  // Allow requests from the React development server
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
-  res.setHeader("Content-Type", "application/json");
+app.use(express.json());
 
-  if (req.url === "/api/health" && req.method === "GET") {
-    res.writeHead(200);
-
-    res.end(
-      JSON.stringify({
-        status: "ok",
-        message: "TaskFlow Node.js server is running",
-        timestamp: new Date().toISOString(),
-      })
-    );
-
-    return;
-  }
-
-  res.writeHead(404);
-
-  res.end(
-    JSON.stringify({
-      status: "error",
-      message: "Route not found",
-    })
+app.use((req, res, next) => {
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "http://localhost:5173"
   );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type"
+  );
+
+  next();
 });
 
-server.listen(PORT, () => {
-  console.log(`TaskFlow server running on http://localhost:${PORT}`);
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "TaskFlow Express server is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.use("/api/tasks", taskRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: "Route not found",
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(
+    `TaskFlow Express server running on http://localhost:${PORT}`
+  );
 });
