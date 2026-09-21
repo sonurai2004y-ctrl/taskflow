@@ -1,36 +1,40 @@
 import express from "express";
+import Task from "../models/Task.js";
 
 const router = express.Router();
 
-const tasks = [
-  {
-    id: 1,
-    title: "Learn Express.js",
-    completed: false,
-  },
-  {
-    id: 2,
-    title: "Understand Express Routing",
-    completed: true,
-  },
-];
+router.get("/", async (req, res) => {
+  try {
+    const tasks = await Task.find().sort({ createdAt: -1 });
 
-router.get("/", (req, res) => {
-  res.json(tasks);
-});
+    res.json(tasks);
+  } catch (error) {
+    console.error("Failed to fetch tasks:", error);
 
-router.get("/:id", (req, res) => {
-  const id = Number(req.params.id);
-
-  const task = tasks.find((task) => task.id === id);
-
-  if (!task) {
-    return res.status(404).json({
-      message: "Task not found",
+    res.status(500).json({
+      message: "Failed to fetch tasks",
     });
   }
+});
 
-  res.json(task);
+router.get("/:id", async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    res.json(task);
+  } catch (error) {
+    console.error("Failed to fetch task:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch task",
+    });
+  }
 });
 
 export default router;

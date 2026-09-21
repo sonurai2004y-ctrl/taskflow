@@ -1,4 +1,6 @@
+import "dotenv/config";
 import express from "express";
+import mongoose from "mongoose";
 import taskRoutes from "./server/routes/taskRoutes.js";
 
 const app = express();
@@ -37,8 +39,21 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(
-    `TaskFlow Express server running on http://localhost:${PORT}`
-  );
-});
+async function startServer() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+
+    console.log("Connected to MongoDB");
+
+    app.listen(PORT, () => {
+      console.log(
+        `TaskFlow Express server running on http://localhost:${PORT}`
+      );
+    });
+  } catch (error) {
+    console.error("MongoDB connection failed:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
